@@ -1,21 +1,37 @@
 // This is the root module of the application
 import { Module } from '@nestjs/common';
-import {TypeOrmModule} from '@nestjs/typeorm';
-import { ConfigModule,ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { dbConfig } from './config/db.config';
-
+import { APP_GUARD } from '@nestjs/core';
 import { UsersModule } from './modules/users/users.module';
 import { Users } from './modules/users/users.entity';
-import { AuthModule } from './auth/auth.module';
+import { AuthGuard } from './auth/auth.guard';
+import { JwtModule } from '@nestjs/jwt';
+
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    dbConfig,ConfigModule,
+    dbConfig, ConfigModule,
     UsersModule,
-    AuthModule, // Import the AuthModule
+    // AuthModule, // Import the AuthModule
+    JwtModule.registerAsync({
+      global: true,
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get('JWT_SECRET'),
+        signOptions: { expiresIn: '1d' },
+      }),
+      inject: [ConfigService],
+    }),
   ],
-  controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    }
+  ]
+
 })
-export class AppModule {}
+export class AppModule { }

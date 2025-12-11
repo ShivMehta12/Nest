@@ -5,8 +5,12 @@ import { Repository } from 'typeorm';
 import { CreateUserDto } from './users.dto';
 import { BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-
+import * as jwt from 'jsonwebtoken';
+import {response} from '../../utils/response';
+import {constants} from '../../utils/constants';
 const {SECRET_KEY} = process.env;
+
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -24,18 +28,20 @@ export class UsersService {
   }
 
   async loginUser(dto: any) {
-    const get_user = await this.usersRepository.findOne({ where: {email:dto.email} });
-    if(!get_user){
+    const get_user = await this.usersRepository.findOne({ where: { email: dto.email } });
+    if (!get_user) {
       throw new BadRequestException('Invalid email');
     }
-    const isPasswordValid = await bcrypt.compare(dto.password, get_user.password);
 
-    if(!isPasswordValid){
+    const isPasswordValid = await bcrypt.compare(dto.password, get_user.password);
+    if (!isPasswordValid) {
       throw new BadRequestException('Invalid password');
     }
 
+    const token = jwt.sign({ id: get_user.id, email: get_user.email }, process.env.SECRET_KEY, { expiresIn: '1h' });
     
-    return dto;
+    console.log(token,'=================');
+    return response.success({token}, constants.USERS.LOGIN);
   }
 
   async getAllUsers(query: any) {

@@ -1,7 +1,10 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, Redirect, Req, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Redirect, Request, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
-import type { Request } from 'express';
+// import type { Request } from 'express';
 import { CreateUserDto } from './users.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { Req } from '@nestjs/common';
+
 
 /**
  * which ever start from @ it is known as decorator
@@ -23,23 +26,30 @@ export class UsersController {
   async login(@Body() body:any) {
     // UsersService
     const data = await this.userService.loginUser(body)
-    return {message:"login successful",data:body}
+    return {message:"login successful",data}
   }
 
 
   @Get('all')
-  async findAllUsers(@Query() query:any) {
+  async findAllUsers(@Query() query:any, @Req() req) {
+    console.log(req.identity,"req.identty");       // ← access identity here
     const data =await  this.userService.getAllUsers(query)
     return data
   }
 
+  // @UseGuards(AuthGuard)
   @Get("/:id") // for getting all users
-  async findOneUser(@Param('id') id:string) {
+  async findOneUser(@Query('id') id:string) {
     console.log(id,'==id');
     const data = await this.userService.getUser(id)
     return data
   }
 
+  // @UseGuards(AuthGuard)
+  // @Get('profile')
+  // getProfile(@Request() req) {
+  //   return this.userService.getUser(req.user);
+  // }
   // @Get('params') // this is for view usesr
   // findOne(@Query() query:any) {
   //   const {id} = query

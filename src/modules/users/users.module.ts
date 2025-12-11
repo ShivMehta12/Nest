@@ -10,7 +10,7 @@ import {Users} from './users.entity'; // <--- **IMPORT THE ENTITY HERE**
   ],
   controllers: [UsersController],
   providers: [UsersService],
-  exports: [UsersService], // Export UsersService to make it available in other modules
+  exports: [UsersService,TypeOrmModule], // Export UsersService to make it available in other modules
 })
 export class UsersModule {
 }
