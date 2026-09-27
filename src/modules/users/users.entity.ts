@@ -13,7 +13,10 @@ import {
     JoinTable,
     Index,
 
-  } from 'typeorm';
+} from 'typeorm';
+
+
+import { Products } from '../products/entities/product.entity';
 
 @Entity()
 export class Users {
@@ -27,7 +30,7 @@ export class Users {
     @Column({ length: 10 })
     lastName: string;
 
-    @Index()
+
     @Column({ unique: true })
     email: string;
 
@@ -46,7 +49,23 @@ export class Users {
     @Column({ default: false })
     isDeleted: boolean;
 
-    constructor(users: Partial<Users>){
+    @ManyToOne(() => Users, (user) => user.createdUsers, {
+        nullable: true,
+        onDelete: 'SET NULL',
+    })
+    @JoinColumn({ name: 'addedById' })
+    addedBy: Users;
+
+    @OneToMany(() => Users, (user) => user.addedBy)
+    createdUsers: Users[];
+
+    @OneToMany(() => Products, (product) => product.addedBy)
+    products: Products[];
+
+    
+
+
+    constructor(users: Partial<Users>) {
         Object.assign(this, users);
     }
 
