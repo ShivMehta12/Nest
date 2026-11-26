@@ -1,27 +1,41 @@
-
 import { ConfigService } from '@nestjs/config';
-import {TypeOrmModule, TypeOrmModuleOptions} from '@nestjs/typeorm';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { Module } from '@nestjs/common';
 
 @Module({
-    imports: [
-        TypeOrmModule.forRootAsync({
-            useFactory : (ConfigService: ConfigService)  => ({
-                type: 'mongodb',
-                url:`mongodb://localhost:27017/learning-nestjs`,
-                // host: ConfigService.getOrThrow<string>('DB_HOST'),
-                // port: +ConfigService.getOrThrow<number>('DB_PORT'),
-                // username: ConfigService.getOrThrow<string>('DB_USER'),
-                // password: ConfigService.getOrThrow<string>('DB_PASSWORD'),
-                // database: ConfigService.getOrThrow<string>('DB_NAME'),
-                authSource:"admin",
-                // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-                synchronize: true,
-                autoLoadEntities: true,
-            }),
-            inject: [ConfigService],
-        })
-    ],
+  imports: [
+    TypeOrmModule.forRootAsync({
+      useFactory: (config: ConfigService) => {
+        const dbType = config.get<string>('DB_TYPE', 'postgres');
+
+        if (dbType === 'mongodb') {
+          return {
+            type: 'mongodb',
+            url: config.get<string>(
+              'MONGODB_URL',
+              'mongodb://localhost:27017/learning-nestjs',
+            ),
+            authSource: 'admin',
+            synchronize: true,
+            autoLoadEntities: true,
+          };
+        }
+
+        return {
+          type: 'postgres',
+          host: config.get<string>('DB_HOST', 'localhost'),
+          port: Number(config.get<number>('DB_PORT', 5432)),
+          username: config.get<string>('DB_USER', 'postgres'),
+          password: config.get<string>('DB_PASSWORD', 'postgres'),
+          database: config.get<string>('DB_NAME', 'learning-nestjs'),
+          synchronize: config.get<string>('NODE_ENV') !== 'production',
+          autoLoadEntities: true,
+        };
+      },
+      inject: [ConfigService],
+    }),
+  ],
 })
-export class dbConfig {}
-console.log("Connected to the database successfully!")
+export class DbConfigModule {}
+
+export { DbConfigModule as dbConfig };

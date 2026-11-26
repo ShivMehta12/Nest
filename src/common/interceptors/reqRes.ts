@@ -1,36 +1,50 @@
-// src/common/interceptors/encryption.interceptor.ts
-
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-// Import your encryption utility service here (e.g., from 'utils/crypto.service')
+
+export interface ResponseFormat<T> {
+  statusCode: number;
+  status: string;
+  message: string;
+  data: T;
+  timestamp: string;
+}
 
 @Injectable()
-export class EncryptionInterceptor implements NestInterceptor {
-  // If you need an encryption service, inject it here
-  // constructor(private readonly cryptoService: CryptoService) {} 
-  
+export class ReqResInterceptor<T> implements NestInterceptor<T, any> {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    
-    // next.handle() returns the data stream from the controller
+    const ctx = context.switchToHttp();
+    const response = ctx.getResponse();
+
     return next.handle().pipe(
-      // The 'map' operator receives the data returned by the controller method
-      map(data => {
-        if (!data) {
-          return null; // Don't try to encrypt null
+      map((data) => {
+        const statusCode = response.statusCode;
+
+        // If response is already formatted with our response utility
+        if (data && typeof data === 'object' && ('status' in data || 'message' in data)) {
+          return {
+            statusCode,
+            ...data,
+            timestamp: new Date().toISOString(),
+          };
         }
-        
-        // --- 🔑 ENCRYPTION LOGIC GOES HERE ---
-        // const encryptedData = this.cryptoService.encrypt(JSON.stringify(data)); 
-        
-        // For demonstration, let's just wrap it:
-        const encryptedResponse = {
-            encrypted: 'This is the encrypted payload based on the controller result.',
-            originalLength: JSON.stringify(data).length,
+
+        return {
+          statusCode,
+          status: 'success',
+          message: 'Request successful',
+          data,
+          timestamp: new Date().toISOString(),
         };
-        
-        return encryptedResponse; // The encrypted object is sent to the client
       }),
     );
   }
 }
+
+// Backwards compatibility alias
+export { ReqResInterceptor as EncryptionInterceptor };

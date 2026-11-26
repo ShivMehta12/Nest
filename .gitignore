@@ -3,13 +3,6 @@
 /node_modules
 /build
 .env
-package-lock.json
-README.md
-tsconfig.build.json
-tsconfig.json
-.eslintrc.js
-.prettierrc
-nest-cli.json
 # Logs
 logs
 *.log

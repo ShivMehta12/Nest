@@ -1,49 +1,139 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, Redirect, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
+  Req,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
-// import type { Request } from 'express';
-import { CreateUserDto } from './users.dto';
-import { Req } from '@nestjs/common';
-import { response } from 'src/utils/response';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  ChangePasswordDto,
+  QueryUserDto,
+} from './dto';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../../common/enums/role.enum';
+import { Users } from './users.entity';
+import { response } from '../../utils/response';
 
-
-/**
- * which ever start from @ it is known as decorator
- * to create crud use nest g resource [name]
- * to create only controller use nest g controller [name]
- */
 @Controller('users')
 export class UsersController {
-  constructor(private readonly userService:UsersService) {}         
+  constructor(private readonly usersService: UsersService) {}
 
+  /**
+   * Create a new user (admin or authorized user)
+   */
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async create(
+    @Body() createUserDto: CreateUserDto,
+    @CurrentUser() currentUser: Users,
+  ) {
+    const created = await this.usersService.create(createUserDto, currentUser?.id);
+    return response.success(created, 'User created successfully');
+  }
 
+  /**
+   * List all users with pagination, filtering, searching
+   */
+  @Get()
+  async findAll(@Query() query: QueryUserDto) {
+    const result = await this.usersService.findAll(query);
+    return response.success(result, 'Users retrieved successfully');
+  }
+
+  /**
+   * Get logged-in user profile
+   */
+  @Get('me')
+  async getProfile(@CurrentUser() currentUser: Users) {
+    const user = await this.usersService.findById(currentUser.id);
+    return response.success(user, 'Profile retrieved successfully');
+  }
+
+  /**
+   * Update logged-in user profile
+   */
+  @Patch('me')
+  async updateProfile(
+    @CurrentUser('id') userId: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const updated = await this.usersService.update(userId, updateUserDto);
+    return response.success(updated, 'Profile updated successfully');
+  }
+
+  /**
+   * Change logged-in user password
+   */
+  @Patch('change-password')
+  async changePassword(
+    @CurrentUser('id') userId: number,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    const result = await this.usersService.changePassword(userId, changePasswordDto);
+    return response.success(result, 'Password changed successfully');
+  }
+
+  /**
+   * Get single user by ID
+   */
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const user = await this.usersService.findById(id);
+    return response.success(user, 'User retrieved successfully');
+  }
+
+  /**
+   * Update user by ID
+   */
+  @Patch(':id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const updated = await this.usersService.update(id, updateUserDto);
+    return response.success(updated, 'User updated successfully');
+  }
+
+  /**
+   * Delete user by ID (soft delete)
+   */
+  @Delete(':id')
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    const result = await this.usersService.remove(id);
+    return response.success(result, 'User deleted successfully');
+  }
+
+  /**
+   * Restore soft-deleted user by ID
+   */
+  @Patch(':id/restore')
+  async restore(@Param('id', ParseIntPipe) id: number) {
+    const restored = await this.usersService.restore(id);
+    return response.success(restored, 'User restored successfully');
+  }
+
+  // --- Backwards Compatibility Routes ---
 
   @Get('all')
-  async findAllUsers(@Query() query:any, @Req() req) {
-    console.log(req.identity,"req.identty");       // ← access identity here
-    const data =await  this.userService.getAllUsers(query)
-    return data
+  async findAllUsersLegacy(@Query() query: any, @Req() req: any) {
+    const data = await this.usersService.getAllUsers(query);
+    return response.success(data, 'Users retrieved successfully');
   }
 
-  // @UseGuards(AuthGuard)
-  @Get("/:id") // for getting all users
-  async findOneUser(@Query('id') id:string) {
-    
-    const data = await this.userService.getUser(id)
-    return data
+  @Post('add-user')
+  async addUserLegacy(@Body() body: any, @Req() req: any) {
+    const currentUserId = req?.identity?.id || req?.user?.id;
+    return await this.usersService.addUser(body, currentUserId);
   }
-
-  // add user
-  @Post("add-user")
-  async addUser(@Body() body:any, @Req() req) {
-    try {
-      console.log(req.identity,"req.identty");       // ← access identity here
-      const data = await this.userService.addUser(body, req.identity.id)
-      
-    } catch (error:any) {
-      return response.failed(error, "")
-    }
-  }
-
 }
-
-

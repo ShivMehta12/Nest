@@ -1,19 +1,27 @@
-//**
-//The entry file of the application which uses the core function NestFactory to create a Nest application instance.
-
-/* eslint-disable prettier/prettier */
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-// import { AuthMiddleware } from './common/middleware/auth.middleware';
+import { ValidationPipe, Logger } from '@nestjs/common';
+
 async function startNest() {
-  const app = await NestFactory.create(AppModule, {logger:false});
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,       // remove fields not in DTO
-    forbidNonWhitelisted: true,  // throw error if extra fields exist
-    transform: true,
-  }),)
-  // app.use(AuthMiddleware)
-  await app.listen(process.env.PORT ?? 3000);
+  const logger = new Logger('Bootstrap');
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors();
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  logger.log(`Application is running on: http://localhost:${port}`);
 }
+
 startNest();

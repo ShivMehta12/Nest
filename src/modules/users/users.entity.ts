@@ -1,72 +1,79 @@
 import {
-    Entity,
-    Column,
-    PrimaryGeneratedColumn,
-    CreateDateColumn,
-    UpdateDateColumn,
-    DeleteDateColumn,
-    OneToMany,
-    ManyToOne,
-    OneToOne,
-    ManyToMany,
-    JoinColumn,
-    JoinTable,
-    Index,
-
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+  Index,
 } from 'typeorm';
-
-
 import { Products } from '../products/entities/product.entity';
+import { UserRole } from '../../common/enums/role.enum';
 
-@Entity()
+@Entity('users')
 export class Users {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ length: 10 })
-    firstName: string;
+  @Column({ length: 50 })
+  firstName: string;
 
+  @Column({ length: 50, nullable: true })
+  lastName: string;
 
-    @Column({ length: 10 })
-    lastName: string;
+  @Index({ unique: true })
+  @Column({ unique: true })
+  email: string;
 
+  @Column({ select: false })
+  password: string;
 
-    @Column({ unique: true })
-    email: string;
+  @Column({
+    type: 'varchar',
+    default: UserRole.USER,
+  })
+  role: UserRole;
 
-    @Column()
-    password: string;
+  @Column({ default: true })
+  isActive: boolean;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @Column({ default: false })
+  isDeleted: boolean;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @Column({ nullable: true })
+  phoneNumber: string;
 
-    @DeleteDateColumn()
-    deletedAt: Date | null;
+  @Column({ nullable: true })
+  avatar: string;
 
-    @Column({ default: false })
-    isDeleted: boolean;
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @ManyToOne(() => Users, (user) => user.createdUsers, {
-        nullable: true,
-        onDelete: 'SET NULL',
-    })
-    @JoinColumn({ name: 'addedById' })
-    addedBy: Users;
+  @UpdateDateColumn()
+  updatedAt: Date;
 
-    @OneToMany(() => Users, (user) => user.addedBy)
-    createdUsers: Users[];
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 
-    @OneToMany(() => Products, (product) => product.addedBy)
-    products: Products[];
+  @ManyToOne(() => Users, (user) => user.createdUsers, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'addedById' })
+  addedBy: Users;
 
-    
+  @OneToMany(() => Users, (user) => user.addedBy)
+  createdUsers: Users[];
 
+  @OneToMany(() => Products, (product) => product.addedBy)
+  products: Products[];
 
-    constructor(users: Partial<Users>) {
-        Object.assign(this, users);
+  constructor(partial?: Partial<Users>) {
+    if (partial) {
+      Object.assign(this, partial);
     }
-
+  }
 }
