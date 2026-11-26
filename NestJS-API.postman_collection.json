@@ -1,0 +1,709 @@
+{
+	"info": {
+		"_postman_id": "nest-learning-api",
+		"name": "NestJS Learning API",
+		"description": "Complete Postman collection for the NestJS application.\n\n**How to use:**\n1. Register or Login to get an `accessToken`\n2. The token is auto-saved to the `token` variable\n3. All protected routes use it automatically via Bearer Auth\n\n**Databases:**\n- Auth, Users, Products → PostgreSQL (TypeORM)\n- Chat, Notifications → MongoDB (Mongoose)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "otherUserId",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "notificationId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "messageId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "resetToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "🔐 Auth (PostgreSQL)",
+			"description": "Authentication endpoints — all public (no token needed)",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.data && res.data.accessToken) {",
+									"    pm.collectionVariables.set('token', res.data.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+									"    if (res.data.user && res.data.user.id) {",
+									"        pm.collectionVariables.set('userId', res.data.user.id.toString());",
+									"    }",
+									"    console.log('✅ Token saved automatically');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"description": "Register a new user. Token is auto-saved to collection variables."
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.data && res.data.accessToken) {",
+									"    pm.collectionVariables.set('token', res.data.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+									"    if (res.data.user && res.data.user.id) {",
+									"        pm.collectionVariables.set('userId', res.data.user.id.toString());",
+									"    }",
+									"    console.log('✅ Token saved automatically');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"description": "Login with email & password. Token is auto-saved to collection variables."
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.data && res.data.accessToken) {",
+									"    pm.collectionVariables.set('token', res.data.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+									"    console.log('✅ Tokens refreshed & saved');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "refresh"]
+						},
+						"description": "Use the refresh token to get new access + refresh tokens."
+					}
+				},
+				{
+					"name": "Forgot Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.data && res.data.resetToken) {",
+									"    pm.collectionVariables.set('resetToken', res.data.resetToken);",
+									"    console.log('✅ Reset token saved');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/forgot-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "forgot-password"]
+						},
+						"description": "Request a password reset token. Token is auto-saved."
+					}
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"{{resetToken}}\",\n    \"newPassword\": \"newpassword123\",\n    \"confirmPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "reset-password"]
+						},
+						"description": "Reset password using the token from forgot-password."
+					}
+				},
+				{
+					"name": "Get Current User (Auth Check)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "me"]
+						},
+						"description": "Returns the currently authenticated user. Requires Bearer token."
+					}
+				}
+			]
+		},
+		{
+			"name": "👤 Users (PostgreSQL)",
+			"description": "User management endpoints — all require Bearer token",
+			"item": [
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "me"]
+						},
+						"description": "Get the logged-in user's full profile."
+					}
+				},
+				{
+					"name": "Update My Profile",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Johnny\",\n    \"lastName\": \"Updated\",\n    \"phoneNumber\": \"+91-9876543210\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "me"]
+						},
+						"description": "Update the logged-in user's profile fields."
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"password123\",\n    \"newPassword\": \"newpassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/change-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "change-password"]
+						},
+						"description": "Change password by providing current and new password."
+					}
+				},
+				{
+					"name": "List All Users (Paginated)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users?page=1&limit=10&sortBy=createdAt&order=DESC",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" },
+								{ "key": "sortBy", "value": "createdAt" },
+								{ "key": "order", "value": "DESC" },
+								{ "key": "search", "value": "", "disabled": true },
+								{ "key": "role", "value": "user", "disabled": true },
+								{ "key": "isActive", "value": "true", "disabled": true }
+							]
+						},
+						"description": "List users with pagination, search, and filters. Enable disabled params as needed."
+					}
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users?search=john&page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"],
+							"query": [
+								{ "key": "search", "value": "john" },
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" }
+							]
+						},
+						"description": "Search users by name or email."
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{userId}}"]
+						},
+						"description": "Get a specific user by their ID."
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"email\": \"jane@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"user\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						},
+						"description": "Create a new user (addedBy is set to current user)."
+					}
+				},
+				{
+					"name": "Update User by ID",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Jane Updated\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/{{otherUserId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{otherUserId}}"]
+						},
+						"description": "Update a user's details by their ID."
+					}
+				},
+				{
+					"name": "Delete User (Soft Delete)",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/users/{{otherUserId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{otherUserId}}"]
+						},
+						"description": "Soft-delete a user (sets isDeleted=true, isActive=false)."
+					}
+				},
+				{
+					"name": "Restore Deleted User",
+					"request": {
+						"method": "PATCH",
+						"url": {
+							"raw": "{{baseUrl}}/users/{{otherUserId}}/restore",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{otherUserId}}", "restore"]
+						},
+						"description": "Restore a soft-deleted user back to active."
+					}
+				}
+			]
+		},
+		{
+			"name": "📦 Products (PostgreSQL)",
+			"description": "Product management endpoints — require Bearer token",
+			"item": [
+				{
+					"name": "Create Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Laptop Pro\",\n    \"sku\": \"LAP-001\",\n    \"price\": 1299\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["products"]
+						}
+					}
+				},
+				{
+					"name": "Get All Products",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["products"]
+						}
+					}
+				},
+				{
+					"name": "Get Product by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/products/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", "1"]
+						}
+					}
+				},
+				{
+					"name": "Update Product",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Laptop Pro Max\",\n    \"price\": 1499\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", "1"]
+						}
+					}
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/products/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["products", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💬 Chat (MongoDB)",
+			"description": "Real-time chat endpoints — stored in MongoDB via Mongoose. Require Bearer token.",
+			"item": [
+				{
+					"name": "Send Message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.data && res.data._id) {",
+									"    pm.collectionVariables.set('messageId', res.data._id);",
+									"    console.log('✅ Message ID saved:', res.data._id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"receiverId\": 2,\n    \"message\": \"Hey! How are you doing?\",\n    \"messageType\": \"text\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/send",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "send"]
+						},
+						"description": "Send a chat message to another user. Message ID is auto-saved."
+					}
+				},
+				{
+					"name": "Send Message with Attachment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"receiverId\": 2,\n    \"message\": \"Check out this file!\",\n    \"messageType\": \"file\",\n    \"attachments\": [\n        {\n            \"url\": \"https://example.com/document.pdf\",\n            \"name\": \"report.pdf\",\n            \"size\": 2048,\n            \"type\": \"application/pdf\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/send",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "send"]
+						},
+						"description": "Send a message with file attachments (MongoDB stores flexible arrays natively)."
+					}
+				},
+				{
+					"name": "Get Conversation with User",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/chat/conversation/{{otherUserId}}?page=1&limit=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "conversation", "{{otherUserId}}"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "50" }
+							]
+						},
+						"description": "Get paginated chat history between you and another user."
+					}
+				},
+				{
+					"name": "Get Recent Conversations",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/chat/conversations",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "conversations"]
+						},
+						"description": "Get list of recent conversation contacts with last message and unread count (uses MongoDB aggregation)."
+					}
+				},
+				{
+					"name": "Mark Conversation as Read",
+					"request": {
+						"method": "PATCH",
+						"url": {
+							"raw": "{{baseUrl}}/chat/read/{{otherUserId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "read", "{{otherUserId}}"]
+						},
+						"description": "Mark all messages from a specific sender as read."
+					}
+				},
+				{
+					"name": "Delete Message",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/chat/{{messageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "{{messageId}}"]
+						},
+						"description": "Soft-delete a specific chat message."
+					}
+				}
+			]
+		},
+		{
+			"name": "🔔 Notifications (MongoDB)",
+			"description": "Notification endpoints — stored in MongoDB via Mongoose. Require Bearer token.",
+			"item": [
+				{
+					"name": "Create Notification",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.data && res.data._id) {",
+									"    pm.collectionVariables.set('notificationId', res.data._id);",
+									"    console.log('✅ Notification ID saved:', res.data._id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": 1,\n    \"title\": \"New Order Received\",\n    \"message\": \"You have a new order #1234 for Laptop Pro.\",\n    \"type\": \"success\",\n    \"metadata\": {\n        \"orderId\": 1234,\n        \"productName\": \"Laptop Pro\",\n        \"link\": \"/orders/1234\"\n    },\n    \"tags\": [\"order\", \"payment\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["notifications"]
+						},
+						"description": "Create a notification. Notice the flexible metadata object — MongoDB handles this natively."
+					}
+				},
+				{
+					"name": "Get My Notifications",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/notifications?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["notifications"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" },
+								{ "key": "isRead", "value": "false", "disabled": true },
+								{ "key": "type", "value": "success", "disabled": true }
+							]
+						},
+						"description": "Get paginated notifications for the current user. Enable disabled filters as needed."
+					}
+				},
+				{
+					"name": "Get Unread Count",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/notifications/unread-count",
+							"host": ["{{baseUrl}}"],
+							"path": ["notifications", "unread-count"]
+						},
+						"description": "Get count of unread notifications for the current user."
+					}
+				},
+				{
+					"name": "Mark One as Read",
+					"request": {
+						"method": "PATCH",
+						"url": {
+							"raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["notifications", "{{notificationId}}", "read"]
+						},
+						"description": "Mark a single notification as read."
+					}
+				},
+				{
+					"name": "Mark All as Read",
+					"request": {
+						"method": "PATCH",
+						"url": {
+							"raw": "{{baseUrl}}/notifications/read-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["notifications", "read-all"]
+						},
+						"description": "Mark all unread notifications as read for the current user."
+					}
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/notifications/{{notificationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["notifications", "{{notificationId}}"]
+						},
+						"description": "Delete a specific notification."
+					}
+				}
+			]
+		}
+	]
+}
