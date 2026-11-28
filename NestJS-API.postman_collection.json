@@ -586,15 +586,129 @@
 					}
 				},
 				{
-					"name": "Delete Message",
+					"name": "Delete Message (Me or Everyone)",
 					"request": {
 						"method": "DELETE",
-						"url": {
-							"raw": "{{baseUrl}}/chat/{{messageId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["chat", "{{messageId}}"]
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"messageId\": \"{{messageId}}\",\n    \"mode\": \"everyone\"\n}"
 						},
-						"description": "Soft-delete a specific chat message."
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "messages"]
+						},
+						"description": "Delete message. mode: 'me' hides it for you only; mode: 'everyone' replaces text with 'This message was deleted' for all users."
+					}
+				},
+				{
+					"name": "Edit Message",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"messageId\": \"{{messageId}}\",\n    \"newMessage\": \"This message was edited!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages/edit",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "messages", "edit"]
+						},
+						"description": "Edit an existing message. Retains previous message in editHistory."
+					}
+				},
+				{
+					"name": "Add / Toggle Reaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"messageId\": \"{{messageId}}\",\n    \"emoji\": \"❤️\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages/react",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "messages", "react"]
+						},
+						"description": "Add emoji reaction (❤️, 👍, 😂, 🔥). Clicking same emoji again removes it."
+					}
+				},
+				{
+					"name": "Schedule Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"receiverId\": 2,\n    \"message\": \"Happy Birthday! (Scheduled)\",\n    \"scheduledFor\": \"2026-11-28T16:00:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/schedule",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "schedule"]
+						},
+						"description": "Schedule a message for future automated delivery via ChatScheduler cron worker."
+					}
+				},
+				{
+					"name": "Create Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"NestJS Developers\",\n    \"description\": \"Group chat for backend team\",\n    \"memberIds\": [1, 2]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "groups"]
+						},
+						"description": "Create a group chat with initial members."
+					}
+				},
+				{
+					"name": "Get User Groups",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/chat/groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "groups"]
+						},
+						"description": "Get all groups the logged-in user belongs to."
+					}
+				},
+				{
+					"name": "Send Group Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"groupId\": \"67482f3a4b91230012abcdef\",\n    \"message\": \"Hello team!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/groups/send",
+							"host": ["{{baseUrl}}"],
+							"path": ["chat", "groups", "send"]
+						},
+						"description": "Send a message into a group chat."
 					}
 				}
 			]

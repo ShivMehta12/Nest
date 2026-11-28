@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsArray, IsObject } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsArray, IsDateString } from 'class-validator';
 
 export class SendMessageDto {
   @IsNumber()
@@ -15,4 +15,8 @@ export class SendMessageDto {
   @IsArray()
   @IsOptional()
   attachments?: Record<string, any>[];
+
+  @IsDateString()
+  @IsOptional()
+  scheduledFor?: string;
 }

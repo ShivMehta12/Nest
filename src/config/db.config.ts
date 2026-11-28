@@ -36,6 +36,6 @@ import { Module } from '@nestjs/common';
     }),
   ],
 })
-export class DbConfigModule {}
+export class DbConfigModule { }
 
 export { DbConfigModule as dbConfig };

@@ -2,12 +2,15 @@ import {
   Module,
   NestModule,
   MiddlewareConsumer,
+  Logger,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
+import * as dotenv from 'dotenv';
 
 import { DbConfigModule } from './config/db.config';
 import { UsersModule } from './modules/users/users.module';
@@ -25,12 +28,43 @@ import { ReqDecryptMiddleware } from './common/middleware/req-decrypt.middleware
 import { ReqResInterceptor } from './common/interceptors/reqRes';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
+// Pre-load .env so configuration is available at module definition time
+dotenv.config();
+
+// MongoDB is enabled by default unless explicitly set to 'false'
+const isMongoEnabled = process.env.ENABLE_MONGODB !== 'false';
+
+const mongoModules = isMongoEnabled
+  ? [
+      MongooseModule.forRootAsync({
+        imports: [ConfigModule],
+        useFactory: (config: ConfigService) => ({
+          uri: config.get<string>(
+            'MONGODB_URL',
+            'mongodb://localhost:27017/learning-nestjs',
+          ),
+        }),
+        inject: [ConfigService],
+      }),
+      NotificationsModule,
+      ChatModule,
+    ]
+  : [];
+
+const logger = new Logger('AppModule');
+if (isMongoEnabled) {
+  logger.log('MongoDB enabled: Mongoose, Chat (WebSockets + REST), and Notifications modules active.');
+} else {
+  logger.log('MongoDB disabled: set ENABLE_MONGODB=true to enable.');
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '.env.example'],
     }),
+    ScheduleModule.forRoot(),
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
@@ -51,28 +85,14 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
     DbConfigModule,
     TypeOrmModule.forFeature([Users]),
 
-    // ───── MongoDB (via Mongoose) ─────
-    // Handles: Chat, Notifications — flexible document data
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        uri: config.get<string>(
-          'MONGODB_URL',
-          'mongodb://localhost:27017/learning-nestjs',
-        ),
-      }),
-      inject: [ConfigService],
-    }),
-
-    // ───── Feature Modules ─────
-    // PostgreSQL modules (TypeORM)
+    // ───── PostgreSQL Feature Modules ─────
     UsersModule,
     ProductsModule,
     AuthModule,
 
-    // MongoDB modules (Mongoose)
-    NotificationsModule,
-    ChatModule,
+    // ───── MongoDB Feature Modules (WebSockets & Document DB) ─────
+    // Active when MongoDB is enabled
+    ...mongoModules,
   ],
   providers: [
     {

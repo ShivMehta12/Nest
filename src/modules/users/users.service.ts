@@ -21,7 +21,7 @@ export class UsersService {
   constructor(
     @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
-  ) {}
+  ) { }
 
   /**
    * Create a new user

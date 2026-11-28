@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NestJS Chat WebSocket Live Tester</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <style>
+    body { background-color: #0b0f19; color: #e2e8f0; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    .log-box { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+</head>
+<body class="p-6">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div class="border-b border-gray-800 pb-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+          <span id="status-dot" class="w-3.5 h-3.5 rounded-full bg-red-500 animate-pulse"></span>
+          NestJS Chat WebSocket & MongoDB Live Tester
+        </h1>
+        <p class="text-xs text-gray-400 mt-1">Namespace: <code class="text-emerald-400">/chat</code> • Real-time Socket.io events with MongoDB persistence</p>
+      </div>
+      <div id="connection-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
+        Disconnected
+      </div>
+    </div>
+
+    <!-- Connection Box -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">Server URL</label>
+        <input id="serverUrl" type="text" value="http://localhost:3000" class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">JWT Bearer Token (from /auth/login)</label>
+        <input id="jwtToken" type="text" placeholder="Paste your access token here..." class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
+      </div>
+      <div class="flex items-end gap-2">
+        <button onclick="connectSocket()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg text-xs transition">
+          🔌 Connect
+        </button>
+        <button onclick="disconnectSocket()" class="bg-red-600/80 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-xs transition">
+          Disconnect
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Left Column: Actions / Event Triggers -->
+      <div class="space-y-4">
+
+        <!-- 1-on-1 Message -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <h3 class="text-sm font-bold text-white flex items-center justify-between">
+            <span>💬 Send 1-on-1 Message</span>
+            <span class="text-[10px] text-emerald-400 font-mono">event: sendMessage</span>
+          </h3>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="text-[11px] text-gray-400">Receiver User ID</label>
+              <input id="receiverId" type="number" value="2" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+            </div>
+            <div class="col-span-2">
+              <label class="text-[11px] text-gray-400">Message Text</label>
+              <input id="msgText" type="text" value="Hello via WebSockets!" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="sendDirectMessage()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs py-1.5 px-3 rounded font-medium transition">
+              Send Message
+            </button>
+            <button onclick="sendTyping(true)" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs py-1.5 px-3 rounded transition">
+              ✍️ Typing ON
+            </button>
+            <button onclick="sendTyping(false)" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs py-1.5 px-3 rounded transition">
+              Typing OFF
+            </button>
+          </div>
+        </div>
+
+        <!-- Group Chat -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <h3 class="text-sm font-bold text-white flex items-center justify-between">
+            <span>👥 Group Chat Operations</span>
+            <span class="text-[10px] text-purple-400 font-mono">event: sendGroupMessage</span>
+          </h3>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[11px] text-gray-400">Group Name (for Create)</label>
+              <input id="groupName" type="text" value="Dev Team" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-400">Member IDs (comma separated)</label>
+              <input id="groupMembers" type="text" value="1,2" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+            </div>
+          </div>
+          <button onclick="createGroup()" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs py-1.5 rounded font-medium transition">
+            Create Group (event: createGroup)
+          </button>
+          <div class="border-t border-gray-800 pt-2 grid grid-cols-3 gap-2">
+            <div>
+              <label class="text-[11px] text-gray-400">Group ID</label>
+              <input id="groupId" type="text" placeholder="MongoDB _id" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white font-mono" />
+            </div>
+            <div class="col-span-2">
+              <label class="text-[11px] text-gray-400">Group Message</label>
+              <input id="groupMsg" type="text" value="Hello group members!" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+            </div>
+          </div>
+          <button onclick="sendGroupMsg()" class="w-full bg-purple-700 hover:bg-purple-600 text-white text-xs py-1.5 rounded font-medium transition">
+            Send Group Message (event: sendGroupMessage)
+          </button>
+        </div>
+
+        <!-- Delete & Edit & Reactions -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <h3 class="text-sm font-bold text-white flex items-center justify-between">
+            <span>⚡ Message Actions (Delete / Edit / React)</span>
+            <span class="text-[10px] text-amber-400 font-mono">Live updates</span>
+          </h3>
+          <div>
+            <label class="text-[11px] text-gray-400">Target Message ID (_id from log)</label>
+            <input id="targetMsgId" type="text" placeholder="e.g. 67482f3a..." class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white font-mono" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="deleteMsg('me')" class="bg-amber-600/80 hover:bg-amber-600 text-white text-xs py-1.5 rounded font-medium transition">
+              🗑️ Delete for Me
+            </button>
+            <button onclick="deleteMsg('everyone')" class="bg-red-700 hover:bg-red-600 text-white text-xs py-1.5 rounded font-medium transition">
+              💥 Delete for Everyone
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <input id="editText" type="text" placeholder="New message content..." class="flex-1 bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+            <button onclick="editMsg()" class="bg-teal-600 hover:bg-teal-500 text-white text-xs px-3 rounded font-medium transition">
+              ✏️ Edit
+            </button>
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <span class="text-xs text-gray-400">React:</span>
+            <button onclick="reactMsg('❤️')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm">❤️</button>
+            <button onclick="reactMsg('👍')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm">👍</button>
+            <button onclick="reactMsg('😂')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm">😂</button>
+            <button onclick="reactMsg('🔥')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm">🔥</button>
+            <button onclick="reactMsg('🎉')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm">🎉</button>
+          </div>
+        </div>
+
+        <!-- Schedule Message -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <h3 class="text-sm font-bold text-white flex items-center justify-between">
+            <span>⏰ Schedule Message (Cron Worker)</span>
+            <span class="text-[10px] text-cyan-400 font-mono">event: scheduleMessage</span>
+          </h3>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[11px] text-gray-400">Receiver ID</label>
+              <input id="scheduleReceiverId" type="number" value="2" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-400">Scheduled Time</label>
+              <input id="scheduleTime" type="datetime-local" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] text-gray-400">Scheduled Content</label>
+            <input id="scheduleText" type="text" value="Happy Birthday! (Delivered on schedule)" class="w-full bg-black/40 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white" />
+          </div>
+          <button onclick="scheduleMsg()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs py-1.5 rounded font-medium transition">
+            Schedule for Automated Delivery
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Live Event Log -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col h-[780px]">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-2 mb-3">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>📡 Real-Time WebSocket Event Stream</span>
+          </h3>
+          <button onclick="clearLogs()" class="text-[11px] text-gray-400 hover:text-white px-2 py-0.5 rounded bg-gray-800">
+            Clear
+          </button>
+        </div>
+        <div id="logArea" class="log-box flex-1 overflow-y-auto space-y-2 text-xs text-gray-300 pr-2">
+          <div class="text-gray-500 italic">Enter your JWT token above and click Connect to start receiving real-time events...</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    let socket = null;
+
+    // Set default schedule date to 1 minute from now
+    const now = new Date(Date.now() + 60000);
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('scheduleTime').value = now.toISOString().slice(0, 16);
+
+    function log(eventName, data, isOutbound = false) {
+      const logArea = document.getElementById('logArea');
+      const time = new Date().toLocaleTimeString();
+      const el = document.createElement('div');
+      el.className = `p-2.5 rounded-lg border ${
+        isOutbound
+          ? 'bg-blue-950/30 border-blue-800/40 text-blue-200'
+          : 'bg-emerald-950/30 border-emerald-800/40 text-emerald-200'
+      }`;
+      
+      const badge = isOutbound
+        ? '<span class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold text-[10px]">OUT</span>'
+        : '<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">IN</span>';
+
+      el.innerHTML = `
+        <div class="flex items-center justify-between text-[11px] mb-1 font-semibold">
+          <span>${badge} <span class="font-mono text-white ml-1">${eventName}</span></span>
+          <span class="text-gray-500">${time}</span>
+        </div>
+        <pre class="text-[10px] text-gray-300 overflow-x-auto whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>
+      `;
+
+      logArea.prepend(el);
+
+      // Auto-populate targetMsgId if received
+      if (data && data._id) {
+        document.getElementById('targetMsgId').value = data._id;
+      }
+      if (data && data.messageId) {
+        document.getElementById('targetMsgId').value = data.messageId;
+      }
+    }
+
+    function clearLogs() {
+      document.getElementById('logArea').innerHTML = '';
+    }
+
+    function connectSocket() {
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+      const token = document.getElementById('jwtToken').value.trim();
+
+      if (!token) {
+        alert('Please paste a JWT token from /auth/login first!');
+        return;
+      }
+
+      if (socket) {
+        socket.disconnect();
+      }
+
+      log('System', { message: `Connecting to ${serverUrl}/chat with Bearer Token...` }, true);
+
+      socket = io(`${serverUrl}/chat`, {
+        auth: { token },
+        transports: ['websocket', 'polling'],
+      });
+
+      socket.on('connect', () => {
+        document.getElementById('status-dot').className = 'w-3.5 h-3.5 rounded-full bg-emerald-500';
+        const badge = document.getElementById('connection-badge');
+        badge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        badge.innerText = `Connected (${socket.id})`;
+        log('connected', { socketId: socket.id });
+      });
+
+      socket.on('disconnect', (reason) => {
+        document.getElementById('status-dot').className = 'w-3.5 h-3.5 rounded-full bg-red-500 animate-pulse';
+        const badge = document.getElementById('connection-badge');
+        badge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20';
+        badge.innerText = 'Disconnected';
+        log('disconnect', { reason });
+      });
+
+      socket.on('error', (err) => log('error', err));
+      socket.on('newMessage', (msg) => log('newMessage', msg));
+      socket.on('messageSent', (msg) => log('messageSent', msg));
+      socket.on('newGroupMessage', (msg) => log('newGroupMessage', msg));
+      socket.on('groupCreated', (grp) => {
+        log('groupCreated', grp);
+        if (grp && grp._id) document.getElementById('groupId').value = grp._id;
+      });
+      socket.on('messageDeleted', (data) => log('messageDeleted', data));
+      socket.on('messageEdited', (data) => log('messageEdited', data));
+      socket.on('messageReaction', (data) => log('messageReaction', data));
+      socket.on('userTyping', (data) => log('userTyping', data));
+      socket.on('userStatus', (data) => log('userStatus', data));
+      socket.on('messagesRead', (data) => log('messagesRead', data));
+    }
+
+    function disconnectSocket() {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+      }
+    }
+
+    function sendDirectMessage() {
+      if (!checkConn()) return;
+      const receiverId = Number(document.getElementById('receiverId').value);
+      const message = document.getElementById('msgText').value.trim();
+      const payload = { receiverId, message };
+      socket.emit('sendMessage', payload, (res) => log('ack:sendMessage', res));
+      log('emit:sendMessage', payload, true);
+    }
+
+    function sendTyping(isTyping) {
+      if (!checkConn()) return;
+      const receiverId = Number(document.getElementById('receiverId').value);
+      const payload = { receiverId, isTyping };
+      socket.emit('typing', payload);
+      log('emit:typing', payload, true);
+    }
+
+    function createGroup() {
+      if (!checkConn()) return;
+      const name = document.getElementById('groupName').value.trim();
+      const memberIds = document.getElementById('groupMembers').value
+        .split(',')
+        .map(id => Number(id.trim()))
+        .filter(id => !isNaN(id));
+      const payload = { name, memberIds };
+      socket.emit('createGroup', payload, (res) => {
+        log('ack:createGroup', res);
+        if (res && res.group && res.group._id) {
+          document.getElementById('groupId').value = res.group._id;
+        }
+      });
+      log('emit:createGroup', payload, true);
+    }
+
+    function sendGroupMsg() {
+      if (!checkConn()) return;
+      const groupId = document.getElementById('groupId').value.trim();
+      const message = document.getElementById('groupMsg').value.trim();
+      if (!groupId) { alert('Please enter or create a Group ID first!'); return; }
+      const payload = { groupId, message };
+      socket.emit('sendGroupMessage', payload, (res) => log('ack:sendGroupMessage', res));
+      log('emit:sendGroupMessage', payload, true);
+    }
+
+    function deleteMsg(mode) {
+      if (!checkConn()) return;
+      const messageId = document.getElementById('targetMsgId').value.trim();
+      if (!messageId) { alert('Enter target messageId first!'); return; }
+      const payload = { messageId, mode };
+      socket.emit('deleteMessage', payload, (res) => log('ack:deleteMessage', res));
+      log('emit:deleteMessage', payload, true);
+    }
+
+    function editMsg() {
+      if (!checkConn()) return;
+      const messageId = document.getElementById('targetMsgId').value.trim();
+      const newMessage = document.getElementById('editText').value.trim();
+      if (!messageId || !newMessage) { alert('Enter target messageId and new message text!'); return; }
+      const payload = { messageId, newMessage };
+      socket.emit('editMessage', payload, (res) => log('ack:editMessage', res));
+      log('emit:editMessage', payload, true);
+    }
+
+    function reactMsg(emoji) {
+      if (!checkConn()) return;
+      const messageId = document.getElementById('targetMsgId').value.trim();
+      if (!messageId) { alert('Enter target messageId first!'); return; }
+      const payload = { messageId, emoji };
+      socket.emit('addReaction', payload, (res) => log('ack:addReaction', res));
+      log('emit:addReaction', payload, true);
+    }
+
+    function scheduleMsg() {
+      if (!checkConn()) return;
+      const receiverId = Number(document.getElementById('scheduleReceiverId').value);
+      const timeVal = document.getElementById('scheduleTime').value;
+      const message = document.getElementById('scheduleText').value.trim();
+      const scheduledFor = new Date(timeVal).toISOString();
+      const payload = { receiverId, message, scheduledFor };
+      socket.emit('scheduleMessage', payload, (res) => log('ack:scheduleMessage', res));
+      log('emit:scheduleMessage', payload, true);
+    }
+
+    function checkConn() {
+      if (!socket || !socket.connected) {
+        alert('Please connect to the WebSocket first!');
+        return false;
+      }
+      return true;
+    }
+  </script>
+</body>
+</html>
